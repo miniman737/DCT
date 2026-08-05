@@ -26,13 +26,13 @@
 /*------------------------------------------------------------------------*/
 
 /*DCT Functions*/
-static void butterfly_fp();													// butterfly - Software implementation of the butterfly operation
-public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N]);		// 2D DCT using Loeffler algorithm, row-column separation
+static void butterfly_fp(int16_t upper, int16_t lower, int16_t *out_upper, int16_t *out_lower, uint8_t rotator);		// butterfly - Software implementation of the butterfly operation
+public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N]);													// 2D DCT using Loeffler algorithm, row-column separation
 
 /*------------------------------------------------------------------------*/
 
 // Butterfly software routine implementation
-static void butterfly_fp() 
+static void butterfly_fp(int16_t upper, int16_t lower, int16_t *out_upper, int16_t *out_lower, uint8_t rotator) 
 {
 	
 }
@@ -68,6 +68,32 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		// Stage 2
 		// Even part
+		output[i][0] = output[i][0] + output[i][6];
+		output[i][4] = output[i][4] + output[i][2];
+		output[i][2] = output[i][4] - output[i][2];
+		output[i][6] = output[i][0] - output[i][6];
+
+		// Odd part
+		butterfly_fp(output[i][7], output[i][3], &output[i][7], &output[i][3], 3);		// Call butterfly function C3
+		butterfly_fp(output[i][5], output[i][1], &output[i][5], &output[i][1], 1);		// Call butterfly function C1
+
+		// Stage 3
+		// Even part
+		output[i][0] = output[i][0] + output[i][4];
+		output[i][4] = output[i][0] - output[i][4];
+
+		butterfly_fp(output[i][2], output[i][6], &output[i][2], &output[i][6], 2);		// Call butterfly function sqrt(2) * C6
+
+		// Odd part 
+		output[i][7] = output[i][7] + output[i][1];
+		output[i][3] = output[i][3] - output[i][1];
+		output[i][5] = output[i][5] - output[i][7];
+		output[i][1] = output[i][1] + output[i][3];
+
+		// Stage 4
+		// Even part --> NOP
+		// Odd part
+		output[i][7] = output[i][7] - output[i][1];
 	}
 }
 
