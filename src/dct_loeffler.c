@@ -45,7 +45,30 @@ static void butterfly_fp()
 // Output: 8x8 block of DCT coefficients (each coefficient is 16 bits, -32768 to 32767) --> int16_t output[N][N]
 public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N]) 
 {
+	// row-column separation: first perform 1D DCT on rows, then on columns
 
+	uint8_t i;
+	int16_t tmp;		// tmp variable to hold results
+
+	// Row-wise 1D DCT
+	for (i = 0; i < N; i++) 
+	{
+		// Stage 1
+		// Even part
+		output[i][0] = input[i][0] + input[i][7];
+		output[i][4] = input[i][1] + input[i][6];
+		output[i][2] = input[i][2] + input[i][5];
+		output[i][6] = input[i][3] + input[i][4];
+
+		// Odd part
+		output[i][7] = input[i][3] - input[i][4];
+		output[i][3] = input[i][2] - input[i][5];
+		output[i][5] = input[i][1] - input[i][6];
+		output[i][1] = input[i][0] - input[i][7];
+
+		// Stage 2
+		// Even part
+	}
 }
 
 int main() 
