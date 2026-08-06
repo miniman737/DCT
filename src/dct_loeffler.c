@@ -134,7 +134,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		// Odd part 
 		tmp_1 = output[i][7];
-		output[i][7] = tmp_1 + output[i][1];
+		output[i][7] = tmp_1 + output[i][5];
 		output[i][5] = tmp_1 - output[i][5];
 
 		tmp_1 = output[i][3];
@@ -145,22 +145,25 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 		// Rounding point for fixed-point arithmetic, to round to nearest integer (1 << 2) for right shift of 3 bits
 		// Even part --> NOP
 		// Scale by a 3 shift right to account for the 3 stages of scaling in DCT --> 11 bits = 8 bits for input + 3 bits for scaling
-		output[i][0] = (output[i][0] + dct_gain_rounding) >> dct_gain_scale;
-		output[i][4] = (output[i][4] + dct_gain_rounding) >> dct_gain_scale;
-		output[i][2] = (output[i][2] + dct_gain_rounding) >> dct_gain_scale;
-		output[i][6] = (output[i][6] + dct_gain_rounding) >> dct_gain_scale;
+		// ONLY APPLY GAIN SCALING AFTER THE COLUMN-WISE DCT, NOT AFTER THE ROW-WISE DCT, AS THIS WILL CAUSE LOSS OF PRECISION AND INCREASED QUANTISATION ERROR
+		// output[i][0] = (output[i][0] + dct_gain_rounding) >> dct_gain_scale;
+		// output[i][4] = (output[i][4] + dct_gain_rounding) >> dct_gain_scale;
+		// output[i][2] = (output[i][2] + dct_gain_rounding) >> dct_gain_scale;
+		// output[i][6] = (output[i][6] + dct_gain_rounding) >> dct_gain_scale;
 
 		// Odd part
 		// Scale by a 3 shift right to account for the 3 stages of scaling DCT
 		tmp_1 = output[i][7];
-		output[i][7] = ((tmp_1 - output[i][1]) + dct_gain_rounding) >> dct_gain_scale;
-		output[i][1] = ((tmp_1 + output[i][1]) + dct_gain_rounding) >> dct_gain_scale;
+		output[i][7] = tmp_1 - output[i][1];
+		output[i][1] = tmp_1 + output[i][1];
+		// output[i][7] = ((tmp_1 - output[i][1]) + dct_gain_rounding) >> dct_gain_scale;
+		// output[i][1] = ((tmp_1 + output[i][1]) + dct_gain_rounding) >> dct_gain_scale;
 
-		tmp_1 = ((output[i][3] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
-		output[i][3] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
+		output[i][3] = ((output[i][3] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
+		// output[i][3] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
 		
-		tmp_1 = ((output[i][5] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
-		output[i][5] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
+		output[i][5] = ((output[i][5] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
+		// output[i][5] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
 	}
 
 	// Column-wise 1D DCT - takes resulting output from row-wise DCT as input
@@ -209,7 +212,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		// Odd part 
 		tmp_1 = output[7][i];
-		output[7][i] = tmp_1 + output[1][i];
+		output[7][i] = tmp_1 + output[5][i];
 		output[5][i] = tmp_1 - output[5][i];
 
 		tmp_1 = output[3][i];
