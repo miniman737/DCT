@@ -251,12 +251,15 @@ int main()
 	int16_t output[N][N] = {0};
 
 	dct_2d_loeffler(input, output);
+
+	printf("DCT Coefficients:\n");
 	for(int x = 0; x < N; x++)
 	{
 		for(int y = 0; y < N; y++)
 		{
-			printf("%d\n", output[x][y]);
+			printf("%6d", output[x][y]);
 		}
+		printf("\n");
 	} 
 	
  	return 0; 
