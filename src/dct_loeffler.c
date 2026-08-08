@@ -1,4 +1,4 @@
-// Fixed-point arithmetic DCT implementation 
+// Fixed-point arithmetic DCT implementation
 // Utilises row-column seperation and the 1D DCT Loeffler algorithm
 
 // Input: 8x8 block of pixels, 320 x 240 grayscale image
@@ -13,7 +13,7 @@
 #define N 8		// Define the size of the NxN block
 
 
-/* Calculated constants for the Loeffler algorithm */ 
+/* Calculated constants for the Loeffler algorithm */
 #define dct_fp_precision 10 							// precision for fixed-point arithmetic
 #define dct_fp_rounding (1 << (dct_fp_precision - 1))	// rounding constant for fixed-point arithmetic
 
@@ -22,7 +22,7 @@
 
 /* Butterfly coeffecients - scaled using DCT fixed-point arithmetic precision of 10*/
 // Butterfly coefficients C1
-#define C1_cos 1004					// cos(pi/16) * 1024		
+#define C1_cos 1004					// cos(pi/16) * 1024
 #define C1_sin 200					// sin(pi/16) * 1024
 #define C1_simplified_1 (-805)		// (sin(pi/16) - cos(pi/16)) * 1024
 #define C1_simplified_2 (-1204)		// (-sin(pi/16) - cos(pi/16)) * 1024
@@ -86,31 +86,36 @@ static void butterfly_fp(int16_t in_upper, int16_t in_lower, int16_t *out_upper,
 // 2D DCT using Loeffler algorithm, row-column separation
 // Input: 8x8 block of pixels, 320 x 240 grayscale image (each pixel is 8 bits, 0-255) --> uint8_t input[N][N]
 // Output: 8x8 block of DCT coefficients (each coefficient is 16 bits, -32768 to 32767) --> int16_t output[N][N]
-public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N]) 
+public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 {
 	// row-column separation: first perform 1D DCT on rows, then on columns
 
-	uint8_t i;
+	uint8_t i; //counter for the initial loop, instead of setting it in the loop, also this follows the Barr-C coding style
 	int16_t tmp_1, tmp_2;		// tmp variables to hold results --> second tmp is only used in stage 1 of column-wise DCT
 
 	// Row-wise 1D DCT
-	for (i = 0; i < N; i++) 
+	// N is a macro that is Set to 8 unless the user sets anything
+	for (i = 0; i < N; i++)
 	{
 		// Stage 1
-		// Even part
-		output[i][0] = input[i][0] + input[i][7];
-		output[i][4] = input[i][1] + input[i][6];
-		output[i][2] = input[i][2] + input[i][5];
-		output[i][6] = input[i][3] + input[i][4];
+		// Even part all addition
+		// exactly as listed in the DCT slides from SIMA
+		// stage 1 is just addition of certain matrix values
+		output[i][0] = input[i][0] + input[i][7]; // 0 = 0 + 7
+		output[i][4] = input[i][1] + input[i][6]; // index 4 = index 1 + index 6
+		output[i][2] = input[i][2] + input[i][5]; // index 2 = index 2 + index 5
+		output[i][6] = input[i][3] + input[i][4]; // index 6 = index 3 + index 4
 
-		// Odd part
-		output[i][7] = input[i][3] - input[i][4];
-		output[i][3] = input[i][2] - input[i][5];
-		output[i][5] = input[i][1] - input[i][6];
-		output[i][1] = input[i][0] - input[i][7];
+		// Odd part all subtraction
+		output[i][7] = input[i][3] - input[i][4]; // index 7 = index 3 - index 4
+		output[i][3] = input[i][2] - input[i][5]; // index 3 = index 2 - index 5
+		output[i][5] = input[i][1] - input[i][6]; // index 5 = index 1 - index 6
+		output[i][1] = input[i][0] - input[i][7]; // index 1 = index 0 - index 7
+		// just the reflector portion
 
 		// Stage 2
-		// Even part
+		// Even part is reflectors again
+		// could be swapped in order, but this prevents aliasing from occuring
 		tmp_1 = output[i][0];
 		output[i][0] = tmp_1 + output[i][6];
 		output[i][6] = tmp_1 - output[i][6];
@@ -118,9 +123,9 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 		tmp_1 = output[i][4];
 		output[i][4] = tmp_1 + output[i][2];
 		output[i][2] = tmp_1 - output[i][2];
-		
 
-		// Odd part
+
+		// Odd part is all butterfly operations
 		butterfly_fp(output[i][7], output[i][1], &output[i][7], &output[i][1], 3);		// Call butterfly function C3
 		butterfly_fp(output[i][3], output[i][5], &output[i][3], &output[i][5], 1);		// Call butterfly function C1
 
@@ -132,7 +137,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		butterfly_fp(output[i][2], output[i][6], &output[i][2], &output[i][6], 2);		// Call butterfly function sqrt(2) * C6
 
-		// Odd part 
+		// Odd part
 		tmp_1 = output[i][7];
 		output[i][7] = tmp_1 + output[i][5];
 		output[i][5] = tmp_1 - output[i][5];
@@ -140,7 +145,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 		tmp_1 = output[i][1];
 		output[i][1] = tmp_1 + output[i][3];
 		output[i][3] = tmp_1 - output[i][3];
-		
+
 
 		// Stage 4
 		// Rounding point for fixed-point arithmetic, to round to nearest integer (1 << 2) for right shift of 3 bits
@@ -168,17 +173,17 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		output[1][i] = output[0][i] - output[7][i];
 		output[0][i] = output[0][i] + output[7][i];
-		
+
 
 		output[6][i] = output[3][i] + output[4][i];
 		output[7][i] = output[3][i] - output[4][i];
 
 		output[3][i] = output[2][i] - output[5][i];
 		output[2][i] = output[2][i] + output[5][i];
-		
+
 		output[4][i] = tmp_1;
 		output[5][i] = tmp_2;
-		
+
 		// Stage 2
 		// Even part
 		tmp_1 = output[0][i];
@@ -188,7 +193,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 		tmp_1 = output[4][i];
 		output[4][i] = tmp_1 + output[2][i];
 		output[2][i] = tmp_1 - output[2][i];
-		
+
 
 		// Odd part
 		butterfly_fp(output[7][i], output[1][i], &output[7][i], &output[1][i], 3);		// Call butterfly function C3
@@ -202,7 +207,7 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		butterfly_fp(output[2][i], output[6][i], &output[2][i], &output[6][i], 2);		// Call butterfly function sqrt(2) * C6
 
-		// Odd part 
+		// Odd part
 		tmp_1 = output[7][i];
 		output[7][i] = tmp_1 + output[5][i];
 		output[5][i] = tmp_1 - output[5][i];
@@ -229,13 +234,13 @@ public void dct_2d_loeffler(uint8_t input[N][N], int16_t output[N][N])
 
 		tmp_1 = ((output[3][i] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
 		output[3][i] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
-		
+
 		tmp_1 = ((output[5][i] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
 		output[5][i] = (tmp_1 + dct_gain_rounding) >> dct_gain_scale;
 	}
 }
 
-int main() 
+int main()
 {
 	// Classic JPEG sample 8x8 pixel block (0-255 grayscale), commonly used as a DCT test vector
 	uint8_t input[N][N] = {
@@ -260,8 +265,7 @@ int main()
 			printf("%6d", output[x][y]);
 		}
 		printf("\n");
-	} 
-	
- 	return 0; 
+	}
+
+ 	return 0;
 }
-		
