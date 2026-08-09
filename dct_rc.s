@@ -1,4 +1,3 @@
-root@socfpga:~# cat dct_rc.s
 	.cpu arm10e
 	.arch armv5te
 	.fpu vfp
