@@ -1,0 +1,227 @@
+================================================================
+ 2D DCT IMPLEMENTATION BENCHMARK
+================================================================
+ Date          : 2013-10-08 14:38:02
+ Platform      : DE1-SoC, Cyclone V 5CSEMA5F31C6 + ARM Cortex-A9
+ Compiled with : gcc -O2
+ Image file    : testGray.pgm
+ Image format  : binary PGM (P5)
+ Image size    : 320 x 240 grayscale
+ Blocks        : 40 x 30 = 1200 blocks of 8x8 (76800 coefficients)
+ Transforms    : 19200 8-point 1D DCTs per full-image pass
+ Repetitions   : 3 timed (median reported), plus 1 untimed warm-up
+ Timer         : clock_gettime(CLOCK_MONOTONIC)
+
+----------------------------------------------------------------
+ IMPLEMENTATIONS UNDER TEST
+----------------------------------------------------------------
+ SW-NAIVE       software  dct_2d_naive()      -- double precision, cos() per term
+ SW-LOEFFLER    software  dct_2d_loeffler_c() -- Q10 butterflies, plain C rotation
+ FW-LOEFFLER    firmware  dct_2d_loeffler()   -- same, hand-scheduled ARM asm
+ HW-FPGA        hardware  dct_2d_fpga()       -- dct_1d_top over the LW bridge
+
+ Sources are compiled unmodified; the harness includes them
+ directly and renames each main() at preprocessing time.
+
+----------------------------------------------------------------
+ TIMING
+----------------------------------------------------------------
+IMPLEMENTATION TYPE        MEDIAN(ms)     BEST(ms)    WORST(ms)    BLOCK(us)
+SW-NAIVE       software       244.983      243.244      245.690      204.153
+SW-LOEFFLER    software         3.413        3.405        3.445        2.844
+FW-LOEFFLER    firmware         3.871        3.841        3.896        3.226
+HW-FPGA        hardware       121.584      121.572      122.176      101.320
+
+----------------------------------------------------------------
+ THROUGHPUT AND RELATIVE SPEED
+----------------------------------------------------------------
+IMPLEMENTATION     BLOCKS/S     MPIXEL/S      SPEEDUP FPS@THIS_RES
+SW-NAIVE             4898.3        0.313        0.01x          4.1
+SW-LOEFFLER        351599.9       22.502        1.00x        293.0
+FW-LOEFFLER        309976.6       19.839        0.88x        258.3
+HW-FPGA              9869.7        0.632        0.03x          8.2
+
+ SPEEDUP is normalised to the fastest implementation (1.00x =
+ fastest). FPS@THIS_RES is how many full frames of this size each
+ implementation could transform per second, DCT time only.
+
+  SW-NAIVE       [############################################]    244.983 ms
+  SW-LOEFFLER    [#...........................................]      3.413 ms
+  FW-LOEFFLER    [#...........................................]      3.871 ms
+  HW-FPGA        [######################......................]    121.584 ms
+                 (longer bar = slower)
+
+----------------------------------------------------------------
+ PER-RUN TIMINGS (ms)
+----------------------------------------------------------------
+ SW-NAIVE          244.983    245.690    243.244
+ SW-LOEFFLER         3.413      3.445      3.405
+ FW-LOEFFLER         3.896      3.841      3.871
+ HW-FPGA           121.584    122.176    121.572
+
+ Spread between best and worst is scheduler and cache noise; the
+ median is reported to suppress it. A wide spread on HW-FPGA can
+ also indicate bus contention with other bridge traffic.
+
+----------------------------------------------------------------
+ NUMERICAL AGREEMENT
+----------------------------------------------------------------
+ Reference: SW-NAIVE -- floating-point cos(), the most accurate of the
+ three. All 76800 coefficients compared.
+
+COMPARISON                    DIFFERING      MAX   MEAN ABS        RMS  ORIENTATION
+SW-NAIVE vs SW-LOEFFLER           60.3%        3     0.6939     0.9383     matching
+SW-NAIVE vs FW-LOEFFLER           60.3%        3     0.6939     0.9383     matching
+SW-NAIVE vs HW-FPGA               60.9%        4     0.7268     0.9865     matching
+SW-LOEFFLER vs FW-LOEFFLER         0.0%        0     0.0000     0.0000     matching
+SW-LOEFFLER vs HW-FPGA            26.6%        2     0.2662     0.5165     matching
+FW-LOEFFLER vs HW-FPGA            26.6%        2     0.2662     0.5165     matching
+
+ Remaining differences are fixed-point rounding, not algorithmic
+ error. The naive version keeps full double precision but truncates
+ rather than rounds at each cast to int32 -- note the cast is
+ (int32_t)(sum * ...) with no +0.5, so it biases toward zero and
+ costs roughly half an LSB per pass. Loeffler rounds at every
+ butterfly stage and defers its gain shift to after the column pass.
+ The hardware rounds once per pass at its >>> 11 output stage.
+
+ The LOEFFLER vs FPGA row is the most informative for your report:
+ both are fixed-point with the same Q10 coefficients, so it isolates
+ rounding strategy from the float-versus-fixed gap. They should agree
+ to within a few LSB. JPEG quantisation divisors of 8-64 make that
+ invisible in a reconstructed image.
+
+----------------------------------------------------------------
+ FIRMWARE VS SOFTWARE -- WHAT THE INLINE ASSEMBLY BUYS
+----------------------------------------------------------------
+ SW-LOEFFLER and FW-LOEFFLER run the identical algorithm: same
+ stages, same Q10 coefficients, same rounding, same deferred gain
+ shift. They differ in exactly one function -- the 3-multiply
+ butterfly rotation -- which SW does in plain C and FW does in
+ hand-scheduled ARM assembly. Any gap between them is the assembly
+ and nothing else.
+
+                   MEDIAN (ms)  PER BLOCK(us) PER BUTTERFLY(ns)
+ SW-LOEFFLER (C)         3.413          2.844           29.6
+ FW-LOEFFLER (asm)        3.871          3.226           33.6
+
+ Butterfly rotations executed: 115200 (1200 blocks x 16 transforms x 6)
+
+ RESULT: the assembly is SLOWER (0.88x, costing 0.458 ms per frame).
+
+ This is a real and reportable outcome, not a mistake. At -O2 the
+ compiler already schedules the two independent multiplies well,
+ and an asm block is an optimisation barrier: the compiler cannot
+ inline through it, cannot keep values in registers across it, and
+ must materialise the coefficient struct into the constrained
+ registers on every call. Hand assembly beats the compiler far less
+ often on a modern toolchain than the folklore suggests.
+
+ Worth checking before writing this up: compare the generated code
+ for both with
+     gcc -O2 -S -fverbose-asm dct_loeffler.c
+ and count instructions in the rotation.
+
+ Output equivalence: BIT-IDENTICAL across all 76800 coefficients.
+ The assembly computes exactly what the C computes, so the
+ speed comparison above is measuring the same work.
+
+----------------------------------------------------------------
+ SAMPLE BLOCK (top-left block of the image)
+----------------------------------------------------------------
+
+ SW-NAIVE:
+        604      -9       7       3       4       0       1       0
+        -52      -3       4       3       1       0       0       0
+         -9      -1       0       2       0      -2       0       0
+         -6       0       0       1       0       2       0       0
+         -1       2       0      -1      -1       0       0       0
+         -2       2       0       0       0       0       0       0
+          4       0      -2       1       0       0       0       0
+          4       0      -1       0       0       0       0       0
+
+ SW-LOEFFLER:
+        606     -10       8       4       6       0       2       1
+        -53      -3       4       3       3       1       1       0
+         -9      -2       0       3      -1      -3       0      -1
+         -6       0      -1       1       0       3       1       1
+         -1       2       1      -2      -1      -1      -1       1
+         -2       3       0      -1       1      -1       0      -1
+          5       0      -3       2       1       0       0       0
+          5      -1      -1       0       0       1       0       0
+
+ FW-LOEFFLER:
+        606     -10       8       4       6       0       2       1
+        -53      -3       4       3       3       1       1       0
+         -9      -2       0       3      -1      -3       0      -1
+         -6       0      -1       1       0       3       1       1
+         -1       2       1      -2      -1      -1      -1       1
+         -2       3       0      -1       1      -1       0      -1
+          5       0      -3       2       1       0       0       0
+          5      -1      -1       0       0       1       0       0
+
+ HW-FPGA:
+        606     -11       8       3       5      -1       2       1
+        -53      -3       4       3       3       2       1       0
+         -9      -2       0       4      -1      -3       0      -1
+         -6       0      -1       1       0       3       2       1
+         -1       2       1      -2      -1      -1      -1       1
+         -3       2       0      -1       2      -1       0      -1
+          6       0      -3       2       1       0      -1       0
+          5      -1      -1       0       0       1       0       1
+
+----------------------------------------------------------------
+ INTERPRETATION
+----------------------------------------------------------------
+ Cost per 8-point 1D DCT:
+
+   SW-NAIVE      64 cos() calls, 64 double multiply-accumulates
+   SW-LOEFFLER   11 integer multiplies, 29 adds, plain C
+   FW-LOEFFLER   same, with the rotation hand-scheduled in asm
+   HW-FPGA       64 parallel MACs in fabric, 0 CPU multiplies,
+                 but 16 bridge transactions of interface overhead
+
+ SW-NAIVE should be far and away the slowest, and the reason is not
+ the transform -- it is that cos() is recomputed from scratch inside
+ the inner loop on every call. That is one libm call per coefficient
+ per input sample, on a core with no fast transcendental unit. It is
+ a correctness reference, not a serious contender; quote it as the
+ baseline the other two are measured against.
+
+ SW-LOEFFLER should beat it by two to three orders of magnitude:
+ the butterfly factorisation removes the multiplies, fixed point
+ removes the FPU, and the 3-multiply rotation with pre-computed
+ simplified coefficients removes a third of what remains. The inline
+ ARM assembly schedules the two independent multiplies into adjacent
+ issue slots, so the rotation is limited by multiplier latency rather
+ than by instruction count.
+
+ HW-FPGA is the one to be careful about. Per 8x8 block it performs:
+
+   16 one-dimensional transforms x (8 writes + 8 reads)
+     = 256 lightweight-bridge transactions per block
+     = 307200 transactions for this image
+
+ Each read is an uncached round trip that stalls the CPU, while the
+ transform itself completes in 3 clocks at 50 MHz (60 ns). The
+ accelerator is therefore latency-bound on the interface, not
+ compute-bound. If it loses to Loeffler, that is why -- it is not
+ evidence that the DCT logic is slow, and the report should say so
+ explicitly rather than presenting the number bare.
+
+ This is the classic accelerator-granularity result: offload a unit
+ of work this small and the interface cost exceeds the compute saved.
+ The fix is a wider interface, not a faster transform -- DMA a whole
+ 64-pixel block across the bridge, run both passes in fabric with an
+ on-chip transpose buffer, and read 64 coefficients back. That turns
+ 256 transactions into 2 bursts and lets the fabric's parallelism
+ actually show. The 2D peripheral was the intended route to this.
+
+ Caveat to state when quoting these figures: this measures a
+ memory-mapped register interface driven from a user-space process,
+ not the DCT core in isolation. Report it as end-to-end offload cost,
+ which is both the honest framing and the more useful one.
+
+================================================================
+ END OF REPORT
+================================================================

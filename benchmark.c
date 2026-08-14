@@ -47,14 +47,15 @@
  *         orthonormal DCT needs sqrt(2/N)*ck.
  * ========================================================== */
 
-static void sw_transpose(int32_t in[N][N], int32_t out[N][N])
+static void transpose(int32_t in[N][N], int32_t out[N][N])
 {
-    for (int x = 0; x < N; x++)
-        for (int y = 0; y < N; y++)
+    int x, y;
+    for (x = 0; x < N; x++)
+        for (y = 0; y < N; y++)
             out[y][x] = in[x][y];
 }
 
-static void sw_dct_1d(const int32_t *input, int32_t *output)
+static void dct_1d(const int32_t *input, int32_t *output)
 {
     for (int k = 0; k < N; k++) {
         double sum = 0.0;
@@ -73,9 +74,9 @@ static void dct_2d_naive(const uint8_t in[N][N], int32_t out[N][N])
         for (int l = 0; l < N; l++)
             i_block[k][l] = (int32_t)in[k][l];
 
-    for (int k = 0; k < N; k++) sw_dct_1d(i_block[k], t1[k]);
-    sw_transpose(t1, t2);
-    for (int k = 0; k < N; k++) sw_dct_1d(t2[k], out[k]);
+    for (int k = 0; k < N; k++) dct_1d(i_block[k], t1[k]);
+    transpose(t1, t2);
+    for (int k = 0; k < N; k++) dct_1d(t2[k], out[k]);
 }
 
 
