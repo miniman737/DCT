@@ -1397,9 +1397,6 @@ dct_2d_loeffler:
 .LC2:
 	.ascii	"%6d\000"
 	.align	2
-.LC3:
-	.ascii	"X[%d] = %d\012\000"
-	.align	2
 .LC0:
 	.ascii	"\213\220\225\231\233\233\233\233"
 	.ascii	"\220\227\231\234\237\234\234\234"
@@ -1416,15 +1413,15 @@ dct_2d_loeffler:
 	.arm
 	.type	main, %function
 main:
-	@ args = 0, pretend = 0, frame = 408
+	@ args = 0, pretend = 0, frame = 200
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	sub	sp, sp, #408
-	ldr	r3, .L23
+	sub	sp, sp, #200
+	ldr	r3, .L15
 .LPIC1:
 	add	r3, pc, r3
-	sub	ip, fp, #88
+	sub	ip, fp, #76
 	mov	lr, r3
 	ldmia	lr!, {r0, r1, r2, r3}
 	stmia	ip!, {r0, r1, r2, r3}
@@ -1434,17 +1431,17 @@ main:
 	stmia	ip!, {r0, r1, r2, r3}
 	ldm	lr, {r0, r1, r2, r3}
 	stm	ip, {r0, r1, r2, r3}
-	sub	r3, fp, #216
+	sub	r3, fp, #204
 	mov	r2, #128
 	mov	r1, #0
 	mov	r0, r3
 	bl	memset(PLT)
-	sub	r2, fp, #216
-	sub	r3, fp, #88
+	sub	r2, fp, #204
+	sub	r3, fp, #76
 	mov	r1, r2
 	mov	r0, r3
 	bl	dct_2d_loeffler(PLT)
-	ldr	r3, .L23+4
+	ldr	r3, .L15+4
 .LPIC2:
 	add	r3, pc, r3
 	mov	r0, r3
@@ -1464,10 +1461,10 @@ main:
 	lsl	r3, r3, #1
 	sub	r3, r3, #4
 	add	r3, r3, fp
-	sub	r3, r3, #212
+	sub	r3, r3, #200
 	ldrsh	r3, [r3]
 	mov	r1, r3
-	ldr	r3, .L23+8
+	ldr	r3, .L15+8
 .LPIC3:
 	add	r3, pc, r3
 	mov	r0, r3
@@ -1488,92 +1485,17 @@ main:
 	ldr	r3, [fp, #-8]
 	cmp	r3, #7
 	ble	.L13
-	sub	r3, fp, #408
-	mov	r2, #128
-	mov	r1, #0
-	mov	r0, r3
-	bl	memset(PLT)
-	mov	r3, #0
-	str	r3, [fp, #-16]
-	b	.L14
-.L19:
-	mov	r3, #0
-	str	r3, [fp, #-20]
-	b	.L15
-.L18:
-	ldr	r3, [fp, #-20]
-	and	r3, r3, #1
-	cmp	r3, #0
-	bne	.L16
-	mov	r1, #228
-	b	.L17
-.L16:
-	mov	r1, #28
-.L17:
-	ldr	r3, [fp, #-16]
-	lsl	r3, r3, #3
-	sub	r3, r3, #4
-	add	r2, r3, fp
-	ldr	r3, [fp, #-20]
-	add	r3, r2, r3
-	sub	r3, r3, #276
-	mov	r2, r1
-	strb	r2, [r3]
-	ldr	r3, [fp, #-20]
-	add	r3, r3, #1
-	str	r3, [fp, #-20]
-.L15:
-	ldr	r3, [fp, #-20]
-	cmp	r3, #7
-	ble	.L18
-	ldr	r3, [fp, #-16]
-	add	r3, r3, #1
-	str	r3, [fp, #-16]
-.L14:
-	ldr	r3, [fp, #-16]
-	cmp	r3, #7
-	ble	.L19
-	sub	r2, fp, #408
-	sub	r3, fp, #280
-	mov	r1, r2
-	mov	r0, r3
-	bl	dct_2d_loeffler(PLT)
-	mov	r3, #0
-	str	r3, [fp, #-24]
-	b	.L20
-.L21:
-	sub	r3, fp, #4
-	sub	r2, r3, #404
-	ldr	r3, [fp, #-24]
-	lsl	r3, r3, #1
-	add	r3, r2, r3
-	ldrsh	r3, [r3]
-	mov	r2, r3
-	ldr	r1, [fp, #-24]
-	ldr	r3, .L23+12
-.LPIC4:
-	add	r3, pc, r3
-	mov	r0, r3
-	bl	printf(PLT)
-	ldr	r3, [fp, #-24]
-	add	r3, r3, #1
-	str	r3, [fp, #-24]
-.L20:
-	ldr	r3, [fp, #-24]
-	cmp	r3, #7
-	ble	.L21
 	mov	r3, #0
 	mov	r0, r3
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L24:
+.L16:
 	.align	2
-.L23:
+.L15:
 	.word	.LC0-(.LPIC1+8)
 	.word	.LC1-(.LPIC2+8)
 	.word	.LC2-(.LPIC3+8)
-	.word	.LC3-(.LPIC4+8)
 	.size	main, .-main
 	.ident	"GCC: (GNU) 11.2.1 20211120"
 	.section	.note.GNU-stack,"",%progbits

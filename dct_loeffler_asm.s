@@ -1,4 +1,3 @@
-cat dct_loeffler_asm.s
 	.arch armv7-a
 	.fpu neon
 	.eabi_attribute 28, 1	@ Tag_ABI_VFP_args
@@ -92,7 +91,7 @@ butterfly_fw:
 	lsl       r2, r2, #16        	@ tmp1
 	uxth      r1, r1             	@ tmp0
 	orr       r3, r1, r2      	@ Rt, tmp0, tmp1
-
+	
 @ 0 "" 2
 	.arm
 	.syntax unified
@@ -127,10 +126,10 @@ dct_2d_loeffler:
 	sub	sp, sp, #32	@,,
 	str	r0, [fp, #-32]	@ input, input
 	str	r1, [fp, #-36]	@ output, output
-@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++)
+@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++) 
 	mov	r3, #0	@ tmp812,
 	strb	r3, [fp, #-5]	@ tmp813, i
-@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++)
+@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++) 
 	b	.L6		@
 .L7:
 @ dct_loeffler_asm.c:103: 		output[i][0] = input[i][0] + input[i][7];
@@ -868,12 +867,12 @@ dct_2d_loeffler:
 @ dct_loeffler_asm.c:178: 		output[i][5] = ((output[i][5] * sqrt2) + dct_fp_rounding) >> dct_fp_precision;
 	sxth	r2, r1	@ _366, _362
 	strh	r2, [r3, #10]	@ movhi	@ _366, (*_365)[5]
-@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++)
+@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++) 
 	ldrb	r3, [fp, #-5]	@ zero_extendqisi2	@ i.15_367, i
 	add	r3, r3, #1	@ tmp921, i.15_367,
 	strb	r3, [fp, #-5]	@ tmp922, i
 .L6:
-@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++)
+@ dct_loeffler_asm.c:99: 	for (i = 0; i < N; i++) 
 	ldrb	r3, [fp, #-5]	@ zero_extendqisi2	@ tmp925, i
 	cmp	r3, #7	@ tmp925,
 	bls	.L7		@,
@@ -1821,8 +1820,8 @@ dct_2d_loeffler:
 	cmp	r3, #7	@ tmp1203,
 	bls	.L9		@,
 @ dct_loeffler_asm.c:272: }
-	nop
-	nop
+	nop	
+	nop	
 	sub	sp, fp, #4	@,,
 	@ sp needed	@
 	pop	{fp, pc}	@
@@ -1938,7 +1937,7 @@ main:
 	ldr	r3, [fp, #-8]	@ tmp141, x
 	cmp	r3, #7	@ tmp141,
 	ble	.L14		@,
-@ dct_loeffler_asm.c:301:  	return 0;
+@ dct_loeffler_asm.c:301:  	return 0; 
 	mov	r3, #0	@ _13,
 @ dct_loeffler_asm.c:302: }
 	mov	r0, r3	@, <retval>
